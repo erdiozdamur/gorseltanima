@@ -1,0 +1,12 @@
+# Sanal Ortam Klasörü
+venv/
+
+# Yüklenen Geçici Görseller
+uploads/
+
+# Python'un oluşturduğu geçici dosyalar
+__pycache__/
+*.pyc
+
+# macOS'a özel dosyalar
+.DS_Store

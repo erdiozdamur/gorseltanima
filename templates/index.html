@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişmiş Görsel Sınıflandırma</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="card">
+        <h1>Görsel Sınıflandırma</h1>
+        <p>Powered by Erdi Baba</p>
+        
+        <form id="upload-form">
+            <div class="upload-area" id="upload-area">
+                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3 3m3-3l3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                </svg>
+                <p class="upload-area-text">Görselleri buraya sürükleyin veya <span>dosya seçin</span></p>
+                <input type="file" id="file-input" name="images" multiple accept="image/*">
+            </div>
+
+            <div id="file-list"></div>
+
+            <div class="category-display">
+                <h4>Kullanılacak Kategoriler:</h4>
+                <div class="category-tags">
+                    {% for category in categories %}
+                        <span class="tag">{{ category }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit">Sınıflandır</button>
+        </form>
+
+        <div id="loader" class="hidden">
+            <div class="spinner"></div>
+            <p>Görseller işleniyor, lütfen bekleyin...</p>
+        </div>
+
+        <div id="results-container"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('upload-form');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const fileListContainer = document.getElementById('file-list');
+        const loader = document.getElementById('loader');
+        const resultsContainer = document.getElementById('results-container');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => updateFileList(fileInput.files));
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        uploadArea.addEventListener('dragenter', () => uploadArea.classList.add('drag-over'));
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+        uploadArea.addEventListener('drop', (e) => {
+            uploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            fileInput.files = files;
+            updateFileList(files);
+        });
+        
+        function updateFileList(files) {
+            fileListContainer.innerHTML = '';
+            if (files.length > 0) {
+                const list = document.createElement('div');
+                for (const file of files) {
+                    const listItem = document.createElement('div');
+                    listItem.textContent = file.name;
+                    list.appendChild(listItem);
+                }
+                fileListContainer.appendChild(list);
+            }
+        }
+        
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            resultsContainer.innerHTML = '';
+            loader.classList.remove('hidden');
+
+            const formData = new FormData();
+            for (const file of fileInput.files) {
+                formData.append('images', file);
+            }
+
+            // --- DEĞİŞİKLİK ---
+            // Kategori kontrolünü kaldırdık, sadece dosya seçilmiş mi diye bakıyoruz
+            if (fileInput.files.length === 0) {
+                alert('Lütfen en az bir görsel seçin.');
+                loader.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch('/classify', { method: 'POST', body: formData });
+                const data = await response.json();
+                loader.classList.add('hidden');
+
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    resultsContainer.innerHTML = `<div class="error">Hata: ${data.error}</div>`;
+                }
+            } catch (error) {
+                loader.classList.add('hidden');
+                resultsContainer.innerHTML = `<div class="error">Sunucuya bağlanırken bir hata oluştu: ${error}</div>`;
+            }
+        });
+
+        function displayResults(data) {
+            data.forEach(item => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                let resultsHTML = `<h3>${item.filename}</h3><ul>`;
+                item.results.forEach(res => {
+                    const score = (res.score * 100).toFixed(2);
+                    resultsHTML += `<li><span>${res.label}</span> <strong>${score}%</strong></li>`;
+                });
+                resultsHTML += '</ul>';
+                
+                const style = document.createElement('style');
+                style.innerHTML = `.result-item li { display: flex; justify-content: space-between; align-items: center; }`;
+                resultDiv.appendChild(style);
+                resultDiv.innerHTML = resultsHTML;
+                resultsContainer.appendChild(resultDiv);
+            });
+        }
+    </script>
+</body>
+</html>
