@@ -10,7 +10,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # SABİT KATEGORİLERİ BURADA TANIMLIYORUZ
 SABIT_KATEGORILER = [
     # 1. Hotel General View (Otelin Genel Görünümü)
-    "Hotel exterior day shot",          # Otelin dışarıdan gündüz çekimix
+    "Hotel exterior day shot",          # Otelin dışarıdan gündüz çekimi
     "Hotel exterior night shot",        # Otelin dışarıdan gece çekimi
     "Aerial view of the hotel",         # Otelin havadan görünümü (drone)
     "Hotel entrance and driveway",      # Otel girişi ve yolu
